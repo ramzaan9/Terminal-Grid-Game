@@ -2,14 +2,67 @@ import random
 import time
 import os
 
+class Player:
+    """Player class to manage player state and actions"""
+    def __init__(self, name):
+        self.name = name
+        self.health = 100
+        self.score = 0
+        self.position_x = random.randint(0, 9)
+        self.position_y = random.randint(0, 9)
+    
+    def move(self, direction):
+        """Move the player and update health/score"""
+        if direction == 'W' and self.position_y > 0:
+            self.position_y -= 1
+            self.health -= 1
+            self.score += 5
+            return True
+        elif direction == 'S' and self.position_y < 9:
+            self.position_y += 1
+            self.health -= 1
+            self.score += 5
+            return True
+        elif direction == 'A' and self.position_x > 0:
+            self.position_x -= 1
+            self.health -= 1
+            self.score += 5
+            return True
+        elif direction == 'D' and self.position_x < 9:
+            self.position_x += 1
+            self.health -= 1
+            self.score += 5
+            return True
+        return False
+    
+    def take_damage(self, damage=5):
+        """Reduce health when hit by enemy"""
+        self.health -= damage
+        self.score -= 10
+    
+    def reset_position(self):
+        """Reset player position to random location"""
+        self.position_x = random.randint(0, 9)
+        self.position_y = random.randint(0, 9)
+    
+    def reset_stats(self):
+        """Reset health and score"""
+        self.health = 100
+        self.score = 0
+    
+    def is_alive(self):
+        """Check if player is still alive"""
+        return self.health > 0
+    
+    def get_stats(self):
+        """Return formatted stats string"""
+        return f"Assassin: {self.name} | Synchronisation: {self.health}% | Score: {self.score}"
+
 
 os.system('cls')  # Clears the console at the start of the game, making it look cleaner
 menuRunning = True
 
-
 while menuRunning: # The loop will keep running until the player chooses to begin the game or quit
-
-
     print("Welcome to the game!")
     print("[1] Begin a new game")
     print("[2] Controls")
@@ -21,7 +74,6 @@ while menuRunning: # The loop will keep running until the player chooses to begi
         os.system('cls') 
         menuRunning = False # Moves onto difficulty selection
         os.system('cls')
-
         
     elif menuChoice == 2:
         os.system('cls')
@@ -31,12 +83,11 @@ while menuRunning: # The loop will keep running until the player chooses to begi
         print("S: Move Down")
         print("D: Move Right")
         time.sleep(2)
-        input("Press Enter to go back...") # Leaving it as input and pressing enter sends the player back to the menu, instead of just a time.sleep() which would automatically send them back after a few seconds
+        input("Press Enter to go back...")
         os.system('cls')
-
     elif menuChoice == 3:
         print("Goodbye!")
-        quit() # Program ends
+        quit()
 
 playerName = ""
 while len(playerName) < 3 or len(playerName) > 20:
@@ -62,29 +113,21 @@ def spawnEnemies(noOfEnemies):
         enemyXPositions.append(random.randint(0, 9))
         enemyYPositions.append(random.randint(0, 9))
 
-while True: # Main game loop, Username selection and main menu are kept outside of the loop so the game either restarts or allows the player to select their difficulty, or quit
-    os.system('cls')  # Clears console every time the player runs it, removing previous tries
+while True: # Main game loop
+    os.system('cls')
 
     ########## Initialising variables ##########
-
-    playerHealth = 100
-
-    playerScore = 0
-
-    playerPositionX = random.randint(0, 9)
-    playerPositionY = random.randint(0, 9)
-
-    isGameRunning = True
+    # Create player object instead of individual variables
+    player = Player(playerName)
+    
     gridSymbol = "⬛"
     playerSymbol = "🧙"
-
     goalSymbol = "💎"
+    enemySymbol = "💂"
+    
     goalPositionX = random.randint(0, 9)
     goalPositionY = random.randint(0, 9)
-
-    enemySymbol = "💂"
-
-
+    isGameRunning = True
 
     ########## Difficulty Selection ##########
     while True:
@@ -113,73 +156,43 @@ while True: # Main game loop, Username selection and main menu are kept outside 
 
     print(playerName + " has selected difficulty level: " + str(difficulty))
     time.sleep(2)
-
     os.system('cls')
 
     ########## Game Loop ##########
     while isGameRunning == True:
         directionToMove = input("Controls: WASD | Make a move: ")
         directionToMove = directionToMove.upper()
+        os.system('cls')
 
-        os.system('cls') # Clears the terminal after each play making sure its not cluttered with the grid updating every time the player moves
+        ########### Movement using Player class ##########
+        player.move(directionToMove)
 
-
-
-    ########### Movement of the player, deducting health for each move and prevents player from going out of bounds ##########
-        if directionToMove == 'W' and playerPositionY > 0:  # Move Up if not at the top
-            playerPositionY -= 1
-            playerHealth -= 1
-            playerScore += 5
-        elif directionToMove == 'S' and playerPositionY < 9:  # Move Down if not at the bottom
-            playerPositionY += 1
-            playerHealth -= 1
-            playerScore += 5
-
-        elif directionToMove == 'A' and playerPositionX > 0:  # Move Left if not at the left edge
-            playerPositionX -= 1
-            playerHealth -= 1
-            playerScore += 5
-
-        elif directionToMove == 'D' and playerPositionX < 9:  # Move Right if not at the right edge
-            playerPositionX += 1
-            playerHealth -= 1
-            playerScore += 5
-
-
-
-    ########## Check to see if the player collides with the enemy, deducting health if so ##########
+        ########## Check to see if the player collides with the enemy ##########
         for i in range(len(enemyXPositions)):
-            if playerPositionX == enemyXPositions[i] and playerPositionY == enemyYPositions[i]:
-                playerHealth -= 5
-                playerScore -= 10
+            if player.position_x == enemyXPositions[i] and player.position_y == enemyYPositions[i]:
+                player.take_damage()  # Using Player class method
 
-
-
-    ########## Enemy Movement ##########
-        for i in range(len(enemyXPositions)): # tells us how many enemies there are
+        ########## Enemy Movement ##########
+        for i in range(len(enemyXPositions)):
             move = random.randint(1, 4)
-            if move == 1 and enemyYPositions[i] > 0:  # When 
+            if move == 1 and enemyYPositions[i] > 0:
                 enemyYPositions[i] -= 1
-            elif move == 2 and enemyYPositions[i] < 9:  # Move Down
+            elif move == 2 and enemyYPositions[i] < 9:
                 enemyYPositions[i] += 1
-            elif move == 3 and enemyXPositions[i] > 0:  # Move Left
+            elif move == 3 and enemyXPositions[i] > 0:
                 enemyXPositions[i] -= 1
-            elif move == 4 and enemyXPositions[i] < 9:  # Move Right
+            elif move == 4 and enemyXPositions[i] < 9:
                 enemyXPositions[i] += 1
 
-
-
-    ########## Displaying player stats each move always ##########
+        ########## Displaying player stats ##########
         print("[ PLAYER STATS ]")
-        print(f"Assassin: {playerName} | Synchronisation: {playerHealth}% | Score: {playerScore}")
+        print(player.get_stats())  # Using Player class method
         print("Objective: Sneak past the guards and retrieve the diamond")
 
-
-
-    ########## Displaying grid, player, goal, and enemies ###########
+        ########## Displaying grid ###########
         for y in range(10):
             for x in range(10):
-                if y == playerPositionY and x == playerPositionX:
+                if y == player.position_y and x == player.position_x:
                     print(playerSymbol, end=" ")
                     continue
                 elif y == goalPositionY and x == goalPositionX:
@@ -196,30 +209,22 @@ while True: # Main game loop, Username selection and main menu are kept outside 
                         print(gridSymbol, end=" ")
             print()
         
-            
-
-    ########## When the player reaches the goal ##########
-        if playerPositionY == goalPositionY and playerPositionX == goalPositionX:
+        ########## When the player reaches the goal ##########
+        if player.position_y == goalPositionY and player.position_x == goalPositionX:
             print("Crystal retrieved. You have defeated the guards!")
-            print("Your mission score: " + str(playerScore))
+            print("Your mission score: " + str(player.score))
             time.sleep(3.5)
-
             os.system('cls')
-            
-            print("Your mission score: " + str(playerScore))
-
+            print("Your mission score: " + str(player.score))
             print("\nSelect an option:")
-           
             print("[1] Restart Mission")
             print("[2] Change Difficulty")
             print("[3] Quit")
 
             winChoice = int(input("Select your option: "))
             if winChoice == 1:
-                playerHealth = 100
-                playerScore = 0
-                playerPositionX = random.randint(0, 9)
-                playerPositionY = random.randint(0, 9)
+                player.reset_stats()
+                player.reset_position()
                 goalPositionX = random.randint(0, 9)
                 goalPositionY = random.randint(0, 9)
                 enemyXPositions = []
@@ -230,54 +235,41 @@ while True: # Main game loop, Username selection and main menu are kept outside 
                     spawnEnemies(24)
                 elif difficulty == 3:
                     spawnEnemies(32)
-
                 os.system('cls')
                 continue
-
             elif winChoice == 2:
                 isGameRunning = False
                 os.system('cls')
-
             else:
                 os.system('cls')
                 print("Exiting animus...")
                 time.sleep(2)
                 os.system('cls')
-                print("Until next time, " + playerName )
+                print("Until next time, " + playerName)
                 quit()
 
-
-
-    ########## If Player Health Gets too low ##########
-        if playerHealth < 20:
+        ########## If Player Health Gets too low ##########
+        if player.health < 20:
             print("Excessive damage will result in desynchronisation")
 
-
-
-    ########## When the player dies ##########
-        if playerHealth <= 0:
+        ########## When the player dies ##########
+        if not player.is_alive():  # Using Player class method
             print("DESYNCHRONISED")
             time.sleep(2)
             print("Excessive damage taken...")
             time.sleep(2)
-            print("Your mission score: " + str(playerScore))
-
+            print("Your mission score: " + str(player.score))
             os.system('cls')
-            
-            print("Your mission score: " + str(playerScore))
-
+            print("Your mission score: " + str(player.score))
             print("\nSelect an option:")
-            
             print("[1] Restart Mission")
             print("[2] Change Difficulty")
             print("[3] Quit")
 
             loseChoice = int(input("Select your option: "))
             if loseChoice == 1:
-                playerHealth = 100
-                playerScore = 0
-                playerPositionX = 0
-                playerPositionY = 0
+                player.reset_stats()
+                player.reset_position()
                 goalPositionX = random.randint(0, 9)
                 goalPositionY = random.randint(0, 9)
                 enemyXPositions = []
@@ -288,18 +280,15 @@ while True: # Main game loop, Username selection and main menu are kept outside 
                     spawnEnemies(24)
                 elif difficulty == 3:
                     spawnEnemies(32)
-
                 os.system('cls')
                 continue
-
             elif loseChoice == 2:
                 isGameRunning = False
                 os.system('cls')
-
             else:
                 os.system('cls')
                 print("Exiting animus...")
                 time.sleep(2)
                 os.system('cls')
-                print("Until next time, " + playerName )
+                print("Until next time, " + playerName)
                 quit()
